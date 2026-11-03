@@ -1,0 +1,902 @@
+<!--GPT-5.5-->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>영화 티어리스트</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, "Malgun Gothic", sans-serif;
+      background: #111827;
+      color: #f9fafb;
+    }ß
+
+    header {
+      padding: 24px;
+      text-align: center;
+      background: linear-gradient(135deg, #1f2937, #111827);
+      border-bottom: 1px solid #374151;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+    }
+
+    header p {
+      margin: 0;
+      color: #d1d5db;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .panel {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    input[type="text"],
+    input[type="url"] {
+      flex: 1;
+      min-width: 160px;
+      padding: 10px;
+      border: 1px solid #4b5563;
+      border-radius: 8px;
+      background: #111827;
+      color: #f9fafb;
+    }
+
+    input[type="file"] {
+      color: #d1d5db;
+    }
+
+    input[type="color"] {
+      width: 52px;
+      height: 40px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    button {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+
+    button.danger {
+      background: #dc2626;
+    }
+
+    button.danger:hover {
+      background: #b91c1c;
+    }
+
+    button.secondary {
+      background: #4b5563;
+    }
+
+    button.secondary:hover {
+      background: #374151;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #9ca3af;
+      line-height: 1.5;
+      margin-top: 8px;
+    }
+
+    .tier-list {
+      border: 1px solid #374151;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #030712;
+    }
+
+    .tier-row {
+      display: grid;
+      grid-template-columns: 110px 1fr 90px;
+      min-height: 130px;
+      border-bottom: 1px solid #374151;
+    }
+
+    .tier-row:last-child {
+      border-bottom: none;
+    }
+
+    .tier-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: bold;
+      color: #111827;
+      padding: 12px;
+      word-break: break-word;
+      text-align: center;
+    }
+
+    .tier-drop-zone,
+    .movie-pool {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      min-height: 130px;
+      padding: 14px;
+      background: #111827;
+      transition: 0.15s;
+    }
+
+    .tier-drop-zone.drag-over,
+    .movie-pool.drag-over {
+      background: #1e3a8a;
+      outline: 2px dashed #93c5fd;
+      outline-offset: -6px;
+    }
+
+    .tier-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #111827;
+      padding: 8px;
+    }
+
+    .movie-card {
+      width: 92px;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: grab;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    .movie-card:active {
+      cursor: grabbing;
+    }
+
+    .movie-card img {
+      width: 100%;
+      height: 118px;
+      object-fit: cover;
+      display: block;
+      background: #374151;
+    }
+
+    .movie-title {
+      padding: 7px;
+      font-size: 12px;
+      text-align: center;
+      color: #f9fafb;
+      word-break: keep-all;
+      line-height: 1.3;
+      min-height: 42px;
+    }
+
+    .delete-movie {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border-radius: 50%;
+      background: rgba(220, 38, 38, 0.9);
+      font-size: 14px;
+      line-height: 24px;
+    }
+
+    .pool-section {
+      margin-top: 24px;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .pool-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid #374151;
+    }
+
+    .pool-header h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .movie-pool {
+      min-height: 160px;
+    }
+
+    .empty-message {
+      color: #9ca3af;
+      font-size: 14px;
+      padding: 12px;
+    }
+
+    .save-area {
+      margin-top: 24px;
+      display: flex;
+      justify-content: center;
+    }
+
+    #toast {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      transform: translateX(-50%);
+      background: #111827;
+      color: #f9fafb;
+      border: 1px solid #4b5563;
+      padding: 12px 18px;
+      border-radius: 999px;
+      display: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      z-index: 1000;
+    }
+
+    @media (max-width: 900px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .tier-row {
+        grid-template-columns: 80px 1fr 80px;
+      }
+
+      .tier-label {
+        font-size: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎬 영화 티어리스트</h1>
+    <p>영화를 드래그 앤 드롭해서 원하는 등급에 배치해 보세요.</p>
+  </header>
+
+  <main class="container">
+    <section class="controls">
+      <div class="panel">
+        <h2>영화 추가</h2>
+        <form id="movieForm">
+          <div class="form-row">
+            <input id="movieTitleInput" type="text" placeholder="영화 제목 입력" required />
+          </div>
+          <div class="form-row">
+            <input id="movieFileInput" type="file" accept="image/*" />
+          </div>
+          <div class="form-row">
+            <input id="movieUrlInput" type="url" placeholder="또는 이미지 URL 입력" />
+            <button type="submit">영화 추가</button>
+          </div>
+          <div class="hint">
+            이미지 파일을 업로드하거나 이미지 URL을 입력할 수 있습니다.<br />
+            둘 다 없으면 기본 포스터 이미지가 자동 생성됩니다.
+          </div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h2>등급 추가</h2>
+        <form id="tierForm">
+          <div class="form-row">
+            <input id="tierNameInput" type="text" placeholder="등급 이름 예: SS, 명작, 보통" required />
+            <input id="tierColorInput" type="color" value="#facc15" />
+            <button type="submit">등급 추가</button>
+          </div>
+        </form>
+        <div class="hint">
+          등급을 제거하면 그 등급 안에 있던 영화는 아래의 영화 보관함으로 이동합니다.
+        </div>
+      </div>
+    </section>
+
+    <section id="tierList" class="tier-list"></section>
+
+    <section class="pool-section">
+      <div class="pool-header">
+        <h2>영화 보관함</h2>
+        <button id="resetButton" class="secondary" type="button">처음 상태로 되돌리기</button>
+      </div>
+      <div id="moviePool" class="movie-pool"></div>
+    </section>
+
+    <div class="save-area">
+      <button id="saveButton" type="button">티어리스트 이미지로 저장</button>
+    </div>
+  </main>
+
+  <div id="toast"></div>
+
+  <script>
+    const tierListEl = document.getElementById("tierList");
+    const moviePoolEl = document.getElementById("moviePool");
+    const movieForm = document.getElementById("movieForm");
+    const tierForm = document.getElementById("tierForm");
+    const saveButton = document.getElementById("saveButton");
+    const resetButton = document.getElementById("resetButton");
+    const toastEl = document.getElementById("toast");
+
+    let idCounter = 1;
+
+    function createId(prefix) {
+      return prefix + "_" + idCounter++;
+    }
+
+    function showToast(message) {
+      toastEl.textContent = message;
+      toastEl.style.display = "block";
+
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => {
+        toastEl.style.display = "none";
+      }, 2200);
+    }
+
+    function escapeSvgText(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function makePoster(title, color1 = "#2563eb", color2 = "#111827") {
+      const safeTitle = escapeSvgText(title);
+
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="300" height="420" viewBox="0 0 300 420">
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="${color1}"/>
+              <stop offset="100%" stop-color="${color2}"/>
+            </linearGradient>
+          </defs>
+          <rect width="300" height="420" fill="url(#g)"/>
+          <circle cx="230" cy="70" r="42" fill="rgba(255,255,255,0.18)"/>
+          <circle cx="70" cy="350" r="55" fill="rgba(255,255,255,0.12)"/>
+          <text x="150" y="185" text-anchor="middle" font-size="46" font-family="Arial">🎬</text>
+          <text x="150" y="245" text-anchor="middle" font-size="28" font-weight="700"
+                font-family="Arial, sans-serif" fill="white">${safeTitle}</text>
+          <text x="150" y="292" text-anchor="middle" font-size="16"
+                font-family="Arial, sans-serif" fill="rgba(255,255,255,0.82)">MOVIE POSTER</text>
+        </svg>
+      `;
+
+      return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    }
+
+    const initialTierData = [
+      { name: "S", color: "#f87171" },
+      { name: "A", color: "#fb923c" },
+      { name: "B", color: "#facc15" },
+      { name: "C", color: "#4ade80" },
+      { name: "D", color: "#60a5fa" }
+    ];
+
+        const initialMovieData = [
+      { title: "인터스텔라", color1: "#1d4ed8", color2: "#020617" },
+      { title: "기생충", color1: "#525252", color2: "#171717" },
+      { title: "라라랜드", color1: "#a855f7", color2: "#1e1b4b" },
+      { title: "어벤져스", color1: "#dc2626", color2: "#111827" },
+      { title: "센과 치히로", color1: "#22c55e", color2: "#064e3b" },
+      { title: "다크 나이트", color1: "#111827", color2: "#000000" },
+      { title: "토이 스토리", color1: "#0ea5e9", color2: "#1e3a8a" },
+      { title: "매드 맥스", color1: "#f97316", color2: "#7c2d12" }
+    ];
+
+    let tiers = [];
+    let movies = [];
+
+    function resetData() {
+      idCounter = 1;
+
+      tiers = initialTierData.map(tier => ({
+        id: createId("tier"),
+        name: tier.name,
+        color: tier.color
+      }));
+
+      movies = initialMovieData.map(movie => ({
+        id: createId("movie"),
+        title: movie.title,
+        image: makePoster(movie.title, movie.color1, movie.color2),
+        location: "pool"
+      }));
+
+      render();
+      showToast("처음 상태로 되돌렸습니다.");
+    }
+
+    function render() {
+      renderTiers();
+      renderMoviePool();
+      addDropEvents();
+    }
+
+    function renderTiers() {
+      tierListEl.innerHTML = "";
+
+      tiers.forEach(tier => {
+        const row = document.createElement("div");
+        row.className = "tier-row";
+
+        const label = document.createElement("div");
+        label.className = "tier-label";
+        label.style.background = tier.color;
+        label.textContent = tier.name;
+
+        const dropZone = document.createElement("div");
+        dropZone.className = "tier-drop-zone";
+        dropZone.dataset.location = tier.id;
+
+        const tierMovies = movies.filter(movie => movie.location === tier.id);
+
+        if (tierMovies.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "empty-message";
+          empty.textContent = "여기로 영화를 드래그하세요.";
+          dropZone.appendChild(empty);
+        } else {
+          tierMovies.forEach(movie => {
+            dropZone.appendChild(createMovieCard(movie));
+          });
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "tier-actions";
+
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "danger";
+        deleteButton.type = "button";
+        deleteButton.textContent = "삭제";
+        deleteButton.addEventListener("click", () => {
+          removeTier(tier.id);
+        });
+
+        actions.appendChild(deleteButton);
+
+        row.appendChild(label);
+        row.appendChild(dropZone);
+        row.appendChild(actions);
+
+        tierListEl.appendChild(row);
+      });
+    }
+
+    function renderMoviePool() {
+      moviePoolEl.innerHTML = "";
+
+      const poolMovies = movies.filter(movie => movie.location === "pool");
+
+      if (poolMovies.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty-message";
+        empty.textContent = "보관함이 비어 있습니다.";
+        moviePoolEl.appendChild(empty);
+        return;
+      }
+
+      poolMovies.forEach(movie => {
+        moviePoolEl.appendChild(createMovieCard(movie));
+      });
+    }
+
+    function createMovieCard(movie) {
+      const card = document.createElement("div");
+      card.className = "movie-card";
+      card.draggable = true;
+      card.dataset.movieId = movie.id;
+
+      card.addEventListener("dragstart", event => {
+        event.dataTransfer.setData("text/plain", movie.id);
+        event.dataTransfer.effectAllowed = "move";
+      });
+
+      const img = document.createElement("img");
+      img.src = movie.image;
+      img.alt = movie.title;
+
+      const title = document.createElement("div");
+      title.className = "movie-title";
+      title.textContent = movie.title;
+
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "delete-movie";
+      deleteButton.type = "button";
+      deleteButton.textContent = "×";
+      deleteButton.title = "영화 제거";
+
+      deleteButton.addEventListener("click", event => {
+        event.stopPropagation();
+        removeMovie(movie.id);
+      });
+
+      card.appendChild(img);
+      card.appendChild(title);
+      card.appendChild(deleteButton);
+
+      return card;
+    }
+
+    function addDropEvents() {
+      const dropZones = document.querySelectorAll(".tier-drop-zone, .movie-pool");
+
+      dropZones.forEach(zone => {
+        zone.addEventListener("dragover", event => {
+          event.preventDefault();
+          zone.classList.add("drag-over");
+        });
+
+        zone.addEventListener("dragleave", () => {
+          zone.classList.remove("drag-over");
+        });
+
+        zone.addEventListener("drop", event => {
+          event.preventDefault();
+          zone.classList.remove("drag-over");
+
+          const movieId = event.dataTransfer.getData("text/plain");
+          const movie = movies.find(item => item.id === movieId);
+
+          if (!movie) return;
+
+          const newLocation = zone.dataset.location || "pool";
+          movie.location = newLocation;
+
+          render();
+        });
+      });
+    }
+
+    function removeMovie(movieId) {
+      const movie = movies.find(item => item.id === movieId);
+
+      if (!movie) return;
+
+      const ok = confirm(`"${movie.title}" 영화를 제거할까요?`);
+
+      if (!ok) return;
+
+      movies = movies.filter(item => item.id !== movieId);
+      render();
+      showToast("영화를 제거했습니다.");
+    }
+
+    function removeTier(tierId) {
+      const tier = tiers.find(item => item.id === tierId);
+
+      if (!tier) return;
+
+      const ok = confirm(`"${tier.name}" 등급을 제거할까요?\n이 등급의 영화는 보관함으로 이동합니다.`);
+
+      if (!ok) return;
+
+      movies.forEach(movie => {
+        if (movie.location === tierId) {
+          movie.location = "pool";
+        }
+      });
+
+      tiers = tiers.filter(item => item.id !== tierId);
+
+      render();
+      showToast("등급을 제거했습니다.");
+    }
+
+    movieForm.addEventListener("submit", event => {
+      event.preventDefault();
+
+      const titleInput = document.getElementById("movieTitleInput");
+      const fileInput = document.getElementById("movieFileInput");
+      const urlInput = document.getElementById("movieUrlInput");
+
+      const title = titleInput.value.trim();
+      const file = fileInput.files[0];
+      const imageUrl = urlInput.value.trim();
+
+      if (!title) {
+        showToast("영화 제목을 입력해 주세요.");
+        return;
+      }
+
+      if (file) {
+        const reader = new FileReader();
+
+        reader.onload = () => {
+          addMovie(title, reader.result);
+          movieForm.reset();
+        };
+
+        reader.readAsDataURL(file);
+      } else if (imageUrl) {
+        addMovie(title, imageUrl);
+        movieForm.reset();
+      } else {
+        addMovie(title, makePoster(title, "#6366f1", "#111827"));
+        movieForm.reset();
+      }
+    });
+
+    function addMovie(title, image) {
+      movies.push({
+        id: createId("movie"),
+        title,
+        image,
+        location: "pool"
+      });
+
+      render();
+      showToast("영화를 추가했습니다.");
+    }
+
+    tierForm.addEventListener("submit", event => {
+      event.preventDefault();
+
+      const nameInput = document.getElementById("tierNameInput");
+      const colorInput = document.getElementById("tierColorInput");
+
+      const name = nameInput.value.trim();
+      const color = colorInput.value;
+
+      if (!name) {
+        showToast("등급 이름을 입력해 주세요.");
+        return;
+      }
+
+      tiers.push({
+        id: createId("tier"),
+        name,
+        color
+      });
+
+      tierForm.reset();
+      colorInput.value = "#facc15";
+
+      render();
+      showToast("등급을 추가했습니다.");
+    });
+
+    resetButton.addEventListener("click", () => {
+      const ok = confirm("정말 처음 상태로 되돌릴까요?\n추가한 영화와 등급이 사라집니다.");
+
+      if (!ok) return;
+
+      resetData();
+    });
+
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("이미지를 불러오지 못했습니다."));
+
+        /*
+          외부 URL 이미지는 서버 설정에 따라 캔버스 저장이 제한될 수 있습니다.
+          파일 업로드 이미지나 기본 생성 포스터는 정상 저장됩니다.
+        */
+        img.crossOrigin = "anonymous";
+        img.src = src;
+      });
+    }
+
+    function drawRoundedRect(ctx, x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 2) {
+      const chars = String(text).split("");
+      let line = "";
+      let lines = [];
+
+      for (let i = 0; i < chars.length; i++) {
+        const testLine = line + chars[i];
+        const width = ctx.measureText(testLine).width;
+
+        if (width > maxWidth && line !== "") {
+          lines.push(line);
+          line = chars[i];
+
+          if (lines.length === maxLines - 1) {
+            break;
+          }
+        } else {
+          line = testLine;
+        }
+      }
+
+      if (line) {
+        lines.push(line);
+      }
+
+      lines = lines.slice(0, maxLines);
+
+      lines.forEach((item, index) => {
+        ctx.fillText(item, x, y + index * lineHeight);
+      });
+    }
+
+    saveButton.addEventListener("click", async () => {
+      try {
+        await saveTierListImage();
+      } catch (error) {
+        console.error(error);
+        showToast("이미지 저장 중 문제가 발생했습니다.");
+      }
+    });
+
+    async function saveTierListImage() {
+      const labelWidth = 120;
+      const rowHeight = 170;
+      const cardWidth = 90;
+      const cardHeight = 135;
+      const gap = 14;
+      const padding = 20;
+      const headerHeight = 70;
+
+      const canvasWidth = 1200;
+      const canvasHeight = headerHeight + tiers.length * rowHeight + padding * 2;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+
+      const ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = "#111827";
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+      ctx.fillStyle = "#f9fafb";
+      ctx.font = "bold 34px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("🎬 영화 티어리스트", canvasWidth / 2, 36);
+
+      for (let rowIndex = 0; rowIndex < tiers.length; rowIndex++) {
+        const tier = tiers[rowIndex];
+        const y = headerHeight + rowIndex * rowHeight;
+
+        ctx.fillStyle = "#030712";
+        ctx.fillRect(padding, y, canvasWidth - padding * 2, rowHeight - 2);
+
+        ctx.fillStyle = tier.color;
+        ctx.fillRect(padding, y, labelWidth, rowHeight - 2);
+
+        ctx.fillStyle = "#111827";
+        ctx.font = "bold 36px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(tier.name, padding + labelWidth / 2, y + rowHeight / 2);
+
+        const tierMovies = movies.filter(movie => movie.location === tier.id);
+
+        let x = padding + labelWidth + gap;
+        let cardY = y + 18;
+
+        for (const movie of tierMovies) {
+          if (x + cardWidth > canvasWidth - padding) {
+            break;
+          }
+
+          ctx.fillStyle = "#1f2937";
+          drawRoundedRect(ctx, x, cardY, cardWidth, cardHeight, 10);
+
+          try {
+            const img = await loadImage(movie.image);
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(x, cardY, cardWidth, 100);
+            ctx.clip();
+            ctx.drawImage(img, x, cardY, cardWidth, 100);
+            ctx.restore();
+          } catch {
+            ctx.fillStyle = "#374151";
+            ctx.fillRect(x, cardY, cardWidth, 100);
+
+            ctx.fillStyle = "#f9fafb";
+            ctx.font = "28px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("🎬", x + cardWidth / 2, cardY + 50);
+          }
+
+          ctx.fillStyle = "#f9fafb";
+          ctx.font = "12px Arial";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+
+          drawWrappedText(
+            ctx,
+            movie.title,
+            x + cardWidth / 2,
+            cardY + 106,
+            cardWidth - 10,
+            15,
+            2
+          );
+
+          x += cardWidth + gap;
+        }
+      }
+
+      canvas.toBlob(blob => {
+        if (!blob) {
+          showToast("이미지 파일을 만들지 못했습니다.");
+          return;
+        }
+
+        const link = document.createElement("a");
+        link.download = "영화_티어리스트.png";
+        link.href = URL.createObjectURL(blob);
+        link.click();
+
+        URL.revokeObjectURL(link.href);
+        showToast("이미지를 저장했습니다.");
+      }, "image/png");
+    }
+
+    resetData();
+  </script>
+</body>
+</html>
