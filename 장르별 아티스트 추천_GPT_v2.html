@@ -1,0 +1,657 @@
+좋아요. 핵심 수정은 **장르 버튼 클릭 시 `searchInput.value = "";`를 제거**하고, 현재 검색어를 유지한 채 `renderGenreButtons(currentKeyword)`를 다시 호출하는 것입니다.
+
+아래는 수정된 **전체 코드**입니다.
+
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>장르별 아티스트 추천</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f5f6fa;
+      color: #222;
+    }
+
+    header {
+      background-color: #222;
+      color: white;
+      padding: 24px 16px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    header p {
+      margin: 0;
+      font-size: 15px;
+      color: #ddd;
+    }
+
+    main {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    .search-box {
+      margin-bottom: 16px;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .quiz-link {
+      margin-bottom: 24px;
+    }
+
+    .quiz-link button {
+      padding: 10px 14px;
+      background-color: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .quiz-link button:hover {
+      background-color: #4338ca;
+    }
+
+    section {
+      background-color: white;
+      padding: 20px;
+      margin-bottom: 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    section h2 {
+      margin-top: 0;
+      font-size: 22px;
+    }
+
+    .genre-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .genre-buttons button,
+    .quiz button,
+    .youtube-button {
+      border: none;
+      cursor: pointer;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .genre-buttons button {
+      padding: 10px 14px;
+      background-color: #e5e7eb;
+      color: #222;
+    }
+
+    .genre-buttons button:hover {
+      background-color: #d1d5db;
+    }
+
+    /* 현재 선택된 장르 버튼 */
+    .genre-buttons button.active {
+      background-color: #bbf7d0;
+      color: #166534;
+      font-weight: bold;
+    }
+
+    .artist-item {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .artist-name {
+      width: 100%;
+      padding: 14px;
+      background-color: #fafafa;
+      border: none;
+      text-align: left;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .artist-name:hover {
+      background-color: #f0f0f0;
+    }
+
+    .song-list {
+      display: none;
+      padding: 12px 16px;
+      background-color: white;
+      border-top: 1px solid #ddd;
+    }
+
+    .song-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .song-row:last-child {
+      border-bottom: none;
+    }
+
+    .youtube-button {
+      padding: 7px 10px;
+      background-color: #ef4444;
+      color: white;
+      white-space: nowrap;
+    }
+
+    .youtube-button:hover {
+      background-color: #dc2626;
+    }
+
+    #quizSection {
+      display: none;
+    }
+
+    .quiz-question {
+      margin-bottom: 18px;
+    }
+
+    .quiz-question p {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .quiz-question label {
+      display: block;
+      margin: 6px 0;
+      cursor: pointer;
+    }
+
+    .quiz button {
+      padding: 10px 14px;
+      background-color: #16a34a;
+      color: white;
+    }
+
+    .quiz button:hover {
+      background-color: #15803d;
+    }
+
+    .result-box {
+      margin-top: 16px;
+      padding: 14px;
+      background-color: #ecfdf5;
+      border: 1px solid #86efac;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .empty-message {
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>장르별 아티스트 추천</h1>
+    <p>장르와 아티스트를 검색하고 대표곡을 유튜브에서 찾아보세요.</p>
+  </header>
+
+  <main>
+    <div class="search-box">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="가수 이름이나 장르명을 입력하세요"
+      />
+    </div>
+
+    <div class="quiz-link">
+      <button id="quizToggleButton">장르 이름을 잘 모르시나요?</button>
+    </div>
+
+    <section>
+      <h2>장르 버튼 목록</h2>
+      <div id="genreButtons" class="genre-buttons"></div>
+    </section>
+
+    <section>
+      <h2 id="artistTitle">아티스트 리스트</h2>
+      <div id="artistList"></div>
+    </section>
+
+    <section id="quizSection" class="quiz">
+      <h2>장르 추천 퀴즈</h2>
+
+      <form id="quizForm">
+        <div class="quiz-question">
+          <p>1. 어떤 분위기의 음악을 더 좋아하나요?</p>
+
+          <label>
+            <input type="radio" name="q1" value="K-Pop" required />
+            밝고 중독성 있는 음악
+          </label>
+
+          <label>
+            <input type="radio" name="q1" value="Rock" />
+            강한 기타 사운드가 있는 음악
+          </label>
+
+          <label>
+            <input type="radio" name="q1" value="Jazz" />
+            여유롭고 즉흥적인 음악
+          </label>
+        </div>
+
+        <div class="quiz-question">
+          <p>2. 음악에서 가장 중요하게 느끼는 요소는 무엇인가요?</p>
+
+          <label>
+            <input type="radio" name="q2" value="Hip-Hop" required />
+            리듬과 랩
+          </label>
+
+          <label>
+            <input type="radio" name="q2" value="Pop" />
+            따라 부르기 쉬운 멜로디
+          </label>
+
+          <label>
+            <input type="radio" name="q2" value="Classical" />
+            악기 연주와 웅장한 구성
+          </label>
+        </div>
+
+        <div class="quiz-question">
+          <p>3. 어떤 상황에서 음악을 듣고 싶나요?</p>
+
+          <label>
+            <input type="radio" name="q3" value="EDM" required />
+            신나게 움직이고 싶을 때
+          </label>
+
+          <label>
+            <input type="radio" name="q3" value="R&B" />
+            감성적인 분위기가 필요할 때
+          </label>
+
+          <label>
+            <input type="radio" name="q3" value="Jazz" />
+            차분하게 집중하고 싶을 때
+          </label>
+        </div>
+
+        <button type="submit">결과 보기</button>
+      </form>
+
+      <div id="quizResult" class="result-box"></div>
+    </section>
+  </main>
+
+  <script>
+    const musicData = {
+      "K-Pop": [
+        {
+          artist: "BTS",
+          songs: ["Dynamite", "Butter", "Spring Day"]
+        },
+        {
+          artist: "BLACKPINK",
+          songs: ["DDU-DU DDU-DU", "How You Like That", "Kill This Love"]
+        },
+        {
+          artist: "IU",
+          songs: ["Good Day", "Palette", "Blueming"]
+        }
+      ],
+
+      "Rock": [
+        {
+          artist: "Queen",
+          songs: ["Bohemian Rhapsody", "Don't Stop Me Now", "We Will Rock You"]
+        },
+        {
+          artist: "Nirvana",
+          songs: ["Smells Like Teen Spirit", "Come As You Are", "Lithium"]
+        },
+        {
+          artist: "Coldplay",
+          songs: ["Yellow", "Fix You", "Viva La Vida"]
+        }
+      ],
+
+      "Jazz": [
+        {
+          artist: "Miles Davis",
+          songs: ["So What", "Freddie Freeloader", "Blue in Green"]
+        },
+        {
+          artist: "John Coltrane",
+          songs: ["Giant Steps", "Naima", "My Favorite Things"]
+        },
+        {
+          artist: "Ella Fitzgerald",
+          songs: ["Dream a Little Dream of Me", "Summertime", "Misty"]
+        }
+      ],
+
+      "Hip-Hop": [
+        {
+          artist: "Kendrick Lamar",
+          songs: ["HUMBLE.", "Alright", "DNA."]
+        },
+        {
+          artist: "Eminem",
+          songs: ["Lose Yourself", "Stan", "Rap God"]
+        },
+        {
+          artist: "Jay-Z",
+          songs: ["Empire State of Mind", "99 Problems", "Run This Town"]
+        }
+      ],
+
+      "Pop": [
+        {
+          artist: "Taylor Swift",
+          songs: ["Blank Space", "Shake It Off", "Anti-Hero"]
+        },
+        {
+          artist: "Ariana Grande",
+          songs: ["7 rings", "thank u, next", "positions"]
+        },
+        {
+          artist: "Ed Sheeran",
+          songs: ["Shape of You", "Perfect", "Thinking Out Loud"]
+        }
+      ],
+
+      "EDM": [
+        {
+          artist: "Avicii",
+          songs: ["Wake Me Up", "Levels", "The Nights"]
+        },
+        {
+          artist: "Martin Garrix",
+          songs: ["Animals", "Scared to Be Lonely", "In the Name of Love"]
+        },
+        {
+          artist: "Zedd",
+          songs: ["Clarity", "Stay", "The Middle"]
+        }
+      ],
+
+      "R&B": [
+        {
+          artist: "The Weeknd",
+          songs: ["Blinding Lights", "Save Your Tears", "Call Out My Name"]
+        },
+        {
+          artist: "SZA",
+          songs: ["Kill Bill", "Good Days", "Snooze"]
+        },
+        {
+          artist: "Frank Ocean",
+          songs: ["Thinkin Bout You", "Lost", "Pink + White"]
+        }
+      ],
+
+      "Classical": [
+        {
+          artist: "Ludwig van Beethoven",
+          songs: ["Symphony No. 5", "Für Elise", "Moonlight Sonata"]
+        },
+        {
+          artist: "Wolfgang Amadeus Mozart",
+          songs: ["Eine kleine Nachtmusik", "Requiem", "Symphony No. 40"]
+        },
+        {
+          artist: "Johann Sebastian Bach",
+          songs: [
+            "Air on the G String",
+            "Toccata and Fugue in D minor",
+            "Cello Suite No. 1"
+          ]
+        }
+      ]
+    };
+
+    const searchInput = document.getElementById("searchInput");
+    const genreButtons = document.getElementById("genreButtons");
+    const artistList = document.getElementById("artistList");
+    const artistTitle = document.getElementById("artistTitle");
+    const quizForm = document.getElementById("quizForm");
+    const quizResult = document.getElementById("quizResult");
+    const quizSection = document.getElementById("quizSection");
+    const quizToggleButton = document.getElementById("quizToggleButton");
+
+    let selectedGenre = "";
+
+    function renderGenreButtons(filterText = "") {
+      genreButtons.innerHTML = "";
+
+      const genres = Object.keys(musicData).filter(function (genre) {
+        return genre.toLowerCase().includes(filterText.toLowerCase());
+      });
+
+      if (genres.length === 0) {
+        genreButtons.innerHTML =
+          '<p class="empty-message">검색된 장르가 없습니다.</p>';
+        return;
+      }
+
+      genres.forEach(function (genre) {
+        const button = document.createElement("button");
+        button.textContent = genre;
+
+        if (genre === selectedGenre) {
+          button.classList.add("active");
+        }
+
+        button.addEventListener("click", function () {
+          const currentKeyword = searchInput.value.trim();
+
+          selectedGenre = genre;
+
+          /*
+            핵심 수정 부분:
+            기존에는 searchInput.value = ""; 로 검색어를 지웠고,
+            renderGenreButtons(); 로 전체 장르 목록을 다시 보여줬습니다.
+
+            이제는 검색어를 지우지 않고,
+            현재 검색어 currentKeyword를 유지해서 버튼 목록도 검색 결과 상태로 유지합니다.
+          */
+          renderGenreButtons(currentKeyword);
+
+          if (currentKeyword === "") {
+            renderArtistsByGenre(genre);
+          } else {
+            renderSearchResults(currentKeyword);
+          }
+        });
+
+        genreButtons.appendChild(button);
+      });
+    }
+
+    function renderArtistsByGenre(genre) {
+      artistTitle.textContent = genre + " 아티스트 리스트";
+      artistList.innerHTML = "";
+
+      musicData[genre].forEach(function (artistData) {
+        artistList.appendChild(createArtistItem(artistData));
+      });
+    }
+
+    function createArtistItem(artistData) {
+      const artistItem = document.createElement("div");
+      artistItem.className = "artist-item";
+
+      const artistButton = document.createElement("button");
+      artistButton.className = "artist-name";
+      artistButton.textContent = artistData.artist;
+
+      const songList = document.createElement("div");
+      songList.className = "song-list";
+
+      artistData.songs.forEach(function (song) {
+        const songRow = document.createElement("div");
+        songRow.className = "song-row";
+
+        const songName = document.createElement("span");
+        songName.textContent = song;
+
+        const youtubeButton = document.createElement("button");
+        youtubeButton.className = "youtube-button";
+        youtubeButton.textContent = "유튜브";
+
+        youtubeButton.addEventListener("click", function () {
+          const query = encodeURIComponent(artistData.artist + " " + song);
+          const url = "https://www.youtube.com/results?search_query=" + query;
+          window.open(url, "_blank");
+        });
+
+        songRow.appendChild(songName);
+        songRow.appendChild(youtubeButton);
+        songList.appendChild(songRow);
+      });
+
+      artistButton.addEventListener("click", function () {
+        if (songList.style.display === "block") {
+          songList.style.display = "none";
+        } else {
+          songList.style.display = "block";
+        }
+      });
+
+      artistItem.appendChild(artistButton);
+      artistItem.appendChild(songList);
+
+      return artistItem;
+    }
+
+    function renderSearchResults(keyword) {
+      artistTitle.textContent = "검색 결과";
+      artistList.innerHTML = "";
+
+      const lowerKeyword = keyword.toLowerCase();
+      let results = [];
+
+      Object.keys(musicData).forEach(function (genre) {
+        if (genre.toLowerCase().includes(lowerKeyword)) {
+          results = results.concat(musicData[genre]);
+        } else {
+          musicData[genre].forEach(function (artistData) {
+            if (artistData.artist.toLowerCase().includes(lowerKeyword)) {
+              results.push(artistData);
+            }
+          });
+        }
+      });
+
+            if (results.length === 0) {
+        artistList.innerHTML =
+          '<p class="empty-message">검색된 아티스트가 없습니다.</p>';
+        return;
+      }
+
+      results.forEach(function (artistData) {
+        artistList.appendChild(createArtistItem(artistData));
+      });
+    }
+
+    searchInput.addEventListener("input", function () {
+      const keyword = searchInput.value.trim();
+
+      // 검색어가 바뀌면 기존 장르 선택 표시를 초기화
+      selectedGenre = "";
+
+      if (keyword === "") {
+        renderGenreButtons();
+        artistTitle.textContent = "아티스트 리스트";
+        artistList.innerHTML =
+          '<p class="empty-message">장르 버튼을 선택하면 아티스트가 표시됩니다.</p>';
+      } else {
+        renderGenreButtons(keyword);
+        renderSearchResults(keyword);
+      }
+    });
+
+    quizToggleButton.addEventListener("click", function () {
+      quizSection.style.display = "block";
+
+      quizSection.scrollIntoView({
+        behavior: "smooth"
+      });
+    });
+
+    quizForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      const formData = new FormData(quizForm);
+      const scores = {};
+
+      for (const value of formData.values()) {
+        if (scores[value]) {
+          scores[value] += 1;
+        } else {
+          scores[value] = 1;
+        }
+      }
+
+      let recommendedGenre = "";
+      let highestScore = 0;
+
+      Object.keys(scores).forEach(function (genre) {
+        if (scores[genre] > highestScore) {
+          highestScore = scores[genre];
+          recommendedGenre = genre;
+        }
+      });
+
+      quizResult.style.display = "block";
+      quizResult.innerHTML =
+        "<strong>추천 장르: " +
+        recommendedGenre +
+        "</strong><br />아래 아티스트 리스트에 추천 장르의 아티스트를 표시했습니다.";
+
+      // 퀴즈 결과를 보여줄 때는 검색 상태를 초기화
+      searchInput.value = "";
+      selectedGenre = recommendedGenre;
+      renderGenreButtons();
+      renderArtistsByGenre(recommendedGenre);
+    });
+
+    // 처음 화면 설정
+    renderGenreButtons();
+    artistList.innerHTML =
+      '<p class="empty-message">장르 버튼을 선택하면 아티스트가 표시됩니다.</p>';
+  </script>
+</body>
+</html>
