@@ -109,7 +109,6 @@
       background-color: #d1d5db;
     }
 
-    /* 현재 선택된 장르 버튼 */
     .genre-buttons button.active {
       background-color: #bbf7d0;
       color: #166534;
@@ -135,6 +134,12 @@
 
     .artist-name:hover {
       background-color: #f0f0f0;
+    }
+
+    .artist-name.active-artist {
+      background-color: #eefdf3;
+      color: #166534;
+      font-weight: bold;
     }
 
     .song-list {
@@ -216,7 +221,7 @@
 <body>
   <header>
     <h1>장르별 아티스트 추천</h1>
-    <p>장르와 아티스트를 검색하고 대표곡을 유튜브에서 찾아보세요.</p>
+    <p>장르, 아티스트, 노래를 검색하고 대표곡을 유튜브에서 찾아보세요.</p>
   </header>
 
   <main>
@@ -224,7 +229,7 @@
       <input
         type="text"
         id="searchInput"
-        placeholder="가수 이름이나 장르명을 입력하세요"
+        placeholder="장르, 아티스트, 노래 무엇이든 검색해보세요!"
       />
     </div>
 
@@ -448,12 +453,40 @@
 
     let selectedGenre = "";
 
+    // 검색어와 관련 있는 장르를 찾는 함수
+    // 장르명뿐 아니라 아티스트명, 노래명까지 확인함
+    function getMatchedGenres(keyword) {
+      const lowerKeyword = keyword.toLowerCase();
+
+      return Object.keys(musicData).filter(function (genre) {
+        const genreMatch = genre.toLowerCase().includes(lowerKeyword);
+
+        const artistOrSongMatch = musicData[genre].some(function (artistData) {
+          const artistMatch = artistData.artist
+            .toLowerCase()
+            .includes(lowerKeyword);
+
+          const songMatch = artistData.songs.some(function (song) {
+            return song.toLowerCase().includes(lowerKeyword);
+          });
+
+          return artistMatch || songMatch;
+        });
+
+        return genreMatch || artistOrSongMatch;
+      });
+    }
+
     function renderGenreButtons(filterText = "") {
       genreButtons.innerHTML = "";
 
-      const genres = Object.keys(musicData).filter(function (genre) {
-        return genre.toLowerCase().includes(filterText.toLowerCase());
-      });
+      let genres;
+
+      if (filterText === "") {
+        genres = Object.keys(musicData);
+      } else {
+        genres = getMatchedGenres(filterText);
+      }
 
       if (genres.length === 0) {
         genreButtons.innerHTML =
@@ -474,14 +507,6 @@
 
           selectedGenre = genre;
 
-          /*
-            핵심 수정 부분:
-            기존에는 searchInput.value = ""; 로 검색어를 지웠고,
-            renderGenreButtons(); 로 전체 장르 목록을 다시 보여줬습니다.
-
-            이제는 검색어를 지우지 않고,
-            현재 검색어 currentKeyword를 유지해서 버튼 목록도 검색 결과 상태로 유지합니다.
-          */
           renderGenreButtons(currentKeyword);
 
           if (currentKeyword === "") {
@@ -504,7 +529,7 @@
       });
     }
 
-    function createArtistItem(artistData) {
+    function createArtistItem(artistData, isOpen = false) {
       const artistItem = document.createElement("div");
       artistItem.className = "artist-item";
 
@@ -537,11 +562,18 @@
         songList.appendChild(songRow);
       });
 
+      // 곡명 검색으로 나온 경우 처음부터 펼치고 클릭된 것처럼 표시
+      if (isOpen) {
+        songList.style.display = "block";
+        artistButton.classList.add("active-artist");
+      }
       artistButton.addEventListener("click", function () {
         if (songList.style.display === "block") {
           songList.style.display = "none";
+          artistButton.classList.remove("active-artist");
         } else {
           songList.style.display = "block";
+          artistButton.classList.add("active-artist");
         }
       });
 
@@ -559,40 +591,56 @@
       let results = [];
 
       Object.keys(musicData).forEach(function (genre) {
-        if (genre.toLowerCase().includes(lowerKeyword)) {
-          results = results.concat(musicData[genre]);
-        } else {
-          musicData[genre].forEach(function (artistData) {
-            if (artistData.artist.toLowerCase().includes(lowerKeyword)) {
-              results.push(artistData);
-            }
+        const genreMatch = genre.toLowerCase().includes(lowerKeyword);
+
+        musicData[genre].forEach(function (artistData) {
+          const artistMatch = artistData.artist
+            .toLowerCase()
+            .includes(lowerKeyword);
+
+          const songMatch = artistData.songs.some(function (song) {
+            return song.toLowerCase().includes(lowerKeyword);
           });
-        }
+
+          if (genreMatch || artistMatch || songMatch) {
+            results.push({
+              artistData: artistData,
+
+              // 곡명으로 검색된 경우에만 자동으로 펼침
+              isOpen: songMatch
+            });
+          }
+        });
       });
 
-            if (results.length === 0) {
+      if (results.length === 0) {
         artistList.innerHTML =
-          '<p class="empty-message">검색된 아티스트가 없습니다.</p>';
+          '<p class="empty-message">검색된 결과가 없습니다.</p>';
         return;
       }
 
-      results.forEach(function (artistData) {
-        artistList.appendChild(createArtistItem(artistData));
+      results.forEach(function (result) {
+        artistList.appendChild(
+          createArtistItem(result.artistData, result.isOpen)
+        );
       });
     }
 
     searchInput.addEventListener("input", function () {
       const keyword = searchInput.value.trim();
 
-      // 검색어가 바뀌면 기존 장르 선택 표시를 초기화
+      // 검색어가 바뀌면 선택된 장르 상태 초기화
       selectedGenre = "";
 
       if (keyword === "") {
         renderGenreButtons();
+
         artistTitle.textContent = "아티스트 리스트";
         artistList.innerHTML =
           '<p class="empty-message">장르 버튼을 선택하면 아티스트가 표시됩니다.</p>';
       } else {
+        // 여기서 getMatchedGenres를 사용하므로
+        // 아티스트명으로 검색해도 해당 아티스트가 속한 장르가 버튼에 표시됨
         renderGenreButtons(keyword);
         renderSearchResults(keyword);
       }
@@ -636,15 +684,17 @@
         recommendedGenre +
         "</strong><br />아래 아티스트 리스트에 추천 장르의 아티스트를 표시했습니다.";
 
-      // 퀴즈 결과를 보여줄 때는 검색 상태를 초기화
+      // 퀴즈 결과를 볼 때는 검색어 초기화
       searchInput.value = "";
       selectedGenre = recommendedGenre;
+
       renderGenreButtons();
       renderArtistsByGenre(recommendedGenre);
     });
 
     // 처음 화면 설정
     renderGenreButtons();
+
     artistList.innerHTML =
       '<p class="empty-message">장르 버튼을 선택하면 아티스트가 표시됩니다.</p>';
   </script>
